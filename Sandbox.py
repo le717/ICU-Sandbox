@@ -22,29 +22,26 @@
 # Copyright 2012-2013 Triangle717 (http://triangle717.wordpress.com).
 
 # Import only certain items instead of "the whole toolbox"
-import winreg
-from sys import version_info
-import os, subprocess
+import sys, os, subprocess, platform, winreg
 from webbrowser import open_new_tab
 from time import sleep
 # GUI elements
 import tkinter
 from tkinter import filedialog
 # App logging
-import logging
-import yourscorecube
+import logging, yourscorecube
 
 # GLobal variables
 app = "ICU Sandbox"
 majver = "Version 1.0"
-minver = "Beta 2"
+minver = "Stable"
 creator = "Triangle717"
 game = "LEGO Island"
 
 # ------------ Begin ICU Sandbox Initialization ------------ #
 
 def preload():
-    '''Python 3.3.0 check'''
+    '''Python 3.3.0 and Windows Architecture check'''
 
     logging.info("Begin logging to {0}".format(yourscorecube.logging_file))
     logging.info('''
@@ -61,9 +58,9 @@ def preload():
                                 '''.format(app, majver, minver, creator))
 
      # You need to have at least Python 3.3.0 to run ICU Sandbox
-    if version_info < (3,3,0):
-        logging.warning("You are not running Python 3.3.0 or higher!\nYou need to get a newer version to run {0}".format(app))
-        print("\nYou need to download Python 3.3.0 or greater to run {0} {1} {2}.".format(app, majver, minver))
+    if sys.version_info < (3,3,0):
+        logging.warning("User is not running Python 3.3.0 or higher!\nYou need to get a newer version to run {0}".format(app))
+        sys.stdout.write("\nYou need to download Python 3.3.0 or greater to run {0} {1} {2}.".format(app, majver, minver))
 
         # Don't open browser immediately
         sleep(2)
@@ -78,9 +75,32 @@ def preload():
 
     # If you are running Python 3.3.0
     else:
-        logging.info("You are running Python 3.3.0 or greater. {0} will continue.".format(app))
-        logging.info("Swiching to main menu")
-        main()
+        logging.info("User is running Python 3.3.0 or greater. {0} will continue.".format(app))
+
+        # Declare osbit global variable
+        global osbit
+
+        # User is running 64-bit Windows
+        if platform.machine() == 'AMD64':
+            logging.info("User is running 64-bit Windows.")
+            osbit = "x64"
+            logging.info("Swiching to main menu")
+            main()
+
+        # User is running 32-bit Windows
+        elif platform.machine() == 'x86':
+            logging.info("User is running 32-bit Windows.")
+            osbit = "x86"
+            logging.info("Swiching to main menu")
+            main()
+
+        # The user is running an unsupported version of Windows!
+        else:
+            logging.warning("User is running an unsupported OS!")
+            print("\nYou are running an unsupported OS! {0} will now close.".format(app))
+            sleep(3)
+            logging.info("{0} is shutting down".format(app))
+            raise SystemExit
 
 # ------------ End ICU Sandbox Initialization ------------ #
 
@@ -90,28 +110,35 @@ def preload():
 def main():
     '''ICU Sandbox Menu Layout'''
 
-    print("\nHello, and welcome to {0} {1} {2}\nCopyright 2013 {3}!".format(app, majver, minver, creator))
+    '''No, I did not forget something. This is all throughout the script
+     to divide up the log a little bit when switching to new processes.'''
+    logging.info('''
+
+    ''')
+
+    print("\nHello, and welcome to {0} {1} {2}\nCopyright 2013 {3}".format(app, majver, minver, creator))
     print('''\nPlease make a selection:\n
 [c] Create Sandbox
 [d] Delete Sandbox
 [q] Quit''')
-    logging.info("Display menu to user")
+    logging.info("Display main menu to user")
     menuopt = input("\n> ")
     while True:
+
         if menuopt.lower() == "c":
             logging.info("User pressed '[c] Create Sandbox'")
-            logging.info("Switching to Sandbox Creation process (createsandbox())")
-            createsandbox()
+            logging.info("Switching to Sandbox Creation process (createSandbox())")
+            createSandbox()
 
         elif menuopt.lower() == "d":
             logging.info("User pressed '[s] Delete Sandbox'")
-            logging.info("Switching to Sandbox Deletion process (deletesandbox())")
-            deletesandbox()
+            logging.info("Switching to Sandbox Deletion process (deleteSandbox())")
+            deleteSandbox()
 
         elif menuopt.lower() == "q":
             logging.info("User pressed '[q] Quit'")
-            logging.info("Switching to shutdown routine (closeapp())")
-            closeapp()
+            logging.info("Switching to shutdown routine (close())")
+            close()
 
         # Undefined input
         else:
@@ -121,10 +148,13 @@ def main():
 # ------------ End ICU Sandbox Menu Layout ------------ #
 
 
-# ------------ Begin Sandbox Creation Code ------------ #
+# ------------ Begin Sandbox Creation Intro ------------ #
 
-def createsandbox():
-    '''Creates LEGO Island Sandbox'''
+def createSandbox():
+    '''Sandbox Creation Launcher'''
+
+    logging.info('''
+''')
 
     # Draw (then withdraw) the root Tk window
     logging.info("Drawing root Tk window")
@@ -134,13 +164,13 @@ def createsandbox():
 
     # Select your LEGO Island files
     # TODO: Make dialog active window automatically and do the same to main window when closed.
-    logging.info("Display folder selection dialog LEGO Island installation.")
-    gamepath = filedialog.askdirectory(title="Select your {0} installation".format(game))
+    logging.info("Display folder selection dialog for LEGO Island installation.")
+    gamepath = filedialog.askdirectory(title="Please select your {0} installation".format(game))
 
     # The user clicked cancel
     if len(gamepath) == 0:
-        logging.warning("User canceled {0} Sandbox creation!".format(game))
-        print("\nCanceling creation of {0} Sandbox...".format(game))
+        logging.warning("User canceled Sandbox creation!")
+        print("\nCanceling creation of Sandbox...\n")
         sleep(1)
         logging.info("Swiching to main menu")
         main()
@@ -149,118 +179,250 @@ def createsandbox():
     else:
         logging.info("User selected a {0} installation at {1}".format(game, gamepath))
 
-         # Make it seem like the app is not running so fast that is is bugged
+        # Slow this program down so it does not looked bugged from running so fast
         sleep(0.5)
-        logging.info("Create required game registry strings")
         print("\nCreating Sandbox...\n")
 
+        # Display names of registry strings
+        logging.info("Displaying names of Registry strings")
+        logging.info("(This creates the illusion that the string is being created as the name is printed)")
+
+        for line in stringnames:
+            print(line, end="\n") # Display string names one at a time, each on a new line
+            sleep(0.2)
+
+        # Switch to 32-bit registry string code
+        if osbit == 'x86':
+            logging.info("User is running 32-bit (x86) Windows, create x86 Registry Strings")
+            logging.info("Switch to threetwobitStrings(gamepath)")
+            threetwobitStrings(gamepath)
+
+        # Switch to 64-bit registry string code
+        elif osbit == 'x64':
+            logging.info("User is running 64-bit (x64) Windows, create x64 Registry Strings")
+            logging.info("Switch to sixfourbitStrings(gamepath)")
+            sixfourbitStrings(gamepath)
+
+# ------------ End Sandbox Creation Intro ------------ #
+
+
+# ------------ Begin 64-bit Sandbox Creation Code ------------ #
+
+def sixfourbitStrings(gamepath):
+    '''Creates x64 LEGO Island Sandbox'''
+
+    logging.info('''
+''')
+
+
+    logging.info("Creating required game registry strings (x64)")
+    try:
+
+        # Tip: Always use the with handle for this kind of stuff
+        with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, 'Software\Wow6432Node\Mindscape') as createkey:
+            # Explicitly create all keys
+            createstrings = winreg.CreateKey(createkey, "LEGO Island")
+
+            # Use highest quality, almost guanteed-to-work-on-any-OS game settings
+            winreg.SetValueEx(createstrings, "3D Device Name", 0, winreg.REG_SZ, "Ramp Emulation")
+            winreg.SetValueEx(createstrings, "3DSound", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "Back Buffers in Video RAM", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "diskpath", 0, winreg.REG_SZ, gamepath)
+            winreg.SetValueEx(createstrings, "Display Bit Depth", 0, winreg.REG_SZ, "16")
+            winreg.SetValueEx(createstrings, "Draw Cursor", 0, winreg.REG_SZ, "NO")
+            winreg.SetValueEx(createstrings, "Flip Surfaces", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "Full Screen", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "Island Quality", 0, winreg.REG_SZ, "2")
+            winreg.SetValueEx(createstrings, "Island Texture", 0, winreg.REG_SZ, "1")
+            winreg.SetValueEx(createstrings, "JoystickIndex", 0, winreg.REG_SZ, "-1")
+            winreg.SetValueEx(createstrings, "moviespath", 0, winreg.REG_SZ, gamepath)
+            winreg.SetValueEx(createstrings, "Music", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "savepath", 0, winreg.REG_SZ, gamepath)
+            winreg.SetValueEx(createstrings, "UseJoystick", 0, winreg.REG_SZ, "NO")
+            winreg.SetValueEx(createstrings, "Wide View Angle", 0, winreg.REG_SZ, "YES")
+
+        logging.info("Create App Path registry string")
+        with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths') as createapppath:
+            winreg.SetValue(createapppath, "LEGOISLE.exe", winreg.REG_SZ, gamepath)
+
+        logging.info("Sandbox sucessfully created")
+        print("\nSandbox sucessfully created!\n")
+        logging.info("Switching to game launching process (letheIsland(gamepath))")
+        letheIsland(gamepath)
+
+    except WindowsError:
+        logging.warning("Cannot create Sandbox!")
+        logging.warning("{0} was not run with Administrator rights, which are needed to create the Sandbox!".format(app))
+        print("\n{0} does not have the user rights to operate!\nPlease relaunch {1} as an Administrator.".format(app, app))
+        sleep(3)
+        logging.info("Switching to main menu")
+        main()
+
+# ------------ End 64-bit Sandbox Creation Code ------------ #
+
+
+# ------------ Begin 32-bit Sandbox Creation Code ------------ #
+
+def threetwobitStrings(gamepath):
+    '''Creates x86 LEGO Island Sandbox'''
+
+    logging.info('''
+''')
+
+
+    logging.info("Creating required game registry strings (x86)")
+    try:
+        with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, 'Software\Mindscape') as createkey:
+            # Explicitly create all keys
+            createstrings = winreg.CreateKey(createkey, "LEGO Island")
+
+            # Use highest quality, almost guanteed-to-work-on-any-OS game settings
+            winreg.SetValueEx(createstrings, "3D Device Name", 0, winreg.REG_SZ, "Ramp Emulation")
+            winreg.SetValueEx(createstrings, "3DSound", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "Back Buffers in Video RAM", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "diskpath", 0, winreg.REG_SZ, gamepath)
+            winreg.SetValueEx(createstrings, "Display Bit Depth", 0, winreg.REG_SZ, "16")
+            winreg.SetValueEx(createstrings, "Draw Cursor", 0, winreg.REG_SZ, "NO")
+            winreg.SetValueEx(createstrings, "Flip Surfaces", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "Full Screen", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "Island Quality", 0, winreg.REG_SZ, "2")
+            winreg.SetValueEx(createstrings, "Island Texture", 0, winreg.REG_SZ, "1")
+            winreg.SetValueEx(createstrings, "JoystickIndex", 0, winreg.REG_SZ, "-1")
+            winreg.SetValueEx(createstrings, "moviespath", 0, winreg.REG_SZ, gamepath)
+            winreg.SetValueEx(createstrings, "Music", 0, winreg.REG_SZ, "YES")
+            winreg.SetValueEx(createstrings, "savepath", 0, winreg.REG_SZ, gamepath)
+            winreg.SetValueEx(createstrings, "UseJoystick", 0, winreg.REG_SZ, "NO")
+            winreg.SetValueEx(createstrings, "Wide View Angle", 0, winreg.REG_SZ, "YES")
+
+        logging.info("Create App Path registry string")
+        with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths') as createapppath:
+            winreg.SetValue(createapppath, "LEGOISLE.exe", winreg.REG_SZ, gamepath)
+
+        logging.info("Sandbox sucessfully created")
+        print("\nSandbox sucessfully created!\n")
+        logging.info("Switching to game launching process (letheIsland(gamepath))")
+        letheIsland(gamepath)
+
+    except WindowsError:
+        logging.warning("Cannot create Sandbox!")
+        logging.warning("{0} was not run with Administrator rights, which are needed to create the Sandbox!".format(app))
+        print("\n{0} does not have the user rights to operate!\nPlease relaunch {1} as an Administrator.".format(app, app))
+        sleep(3)
+        logging.info("Switching to main menu")
+        main()
+
+# ------------ End 32-bit Sandbox Creation Code ------------ #
+
+
+# ------------ Begin Game Launching Code ------------ #
+
+def letheIsland(gamepath):
+    '''Launches LEGO Island'''
+
+    logging.info('''
+''')
+
+
+    # Launch LEGO Island?
+    logging.info("Do you want to play LEGO Island now?")
+    print("\nDo you want to play {0} now? ".format(game) + r"(y\N)")
+    rungame = input("\n> ".format(game))
+
+    # No, don't launch it
+    if rungame.lower() != "y":
+        logging.warning("User does not want to play LEGO Island right now!")
+        main()
+
+    # Yes, launch it (User presses 'y', which is the only key that will run the game)
+    else:
+        sleep(1)
         try:
-            # TODO: Correct to support both x64 and x86 Windows in one script without WOW64 or multiple EXEs.
-            with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, 'Software\Mindscape') as createkey:
-                createstrings = winreg.CreateKey(createkey, "LEGO Island") # Explicity create all keys
-                winreg.SetValueEx(createstrings, "3D Device Name", 0, winreg.REG_SZ, "Ramp Emulation")
-                winreg.SetValueEx(createstrings, "3DSound", 0, winreg.REG_SZ, "YES")
-                winreg.SetValueEx(createstrings, "Back Buffers in Video RAM", 0, winreg.REG_SZ, "YES")
-                winreg.SetValueEx(createstrings, "diskpath", 0, winreg.REG_SZ, gamepath)
-                winreg.SetValueEx(createstrings, "Display Bit Depth", 0, winreg.REG_SZ, "16")
-                winreg.SetValueEx(createstrings, "Draw Cursor", 0, winreg.REG_SZ, "NO")
-                winreg.SetValueEx(createstrings, "Flip Surfaces", 0, winreg.REG_SZ, "YES")
-                winreg.SetValueEx(createstrings, "Full Screen", 0, winreg.REG_SZ, "YES")
-                winreg.SetValueEx(createstrings, "Island Quality", 0, winreg.REG_SZ, "2")
-                winreg.SetValueEx(createstrings, "Island Texture", 0, winreg.REG_SZ, "1")
-                winreg.SetValueEx(createstrings, "JoystickIndex", 0, winreg.REG_SZ, "-1")
-                winreg.SetValueEx(createstrings, "moviespath", 0, winreg.REG_SZ, gamepath)
-                winreg.SetValueEx(createstrings, "Music", 0, winreg.REG_SZ, "YES")
-                winreg.SetValueEx(createstrings, "savepath", 0, winreg.REG_SZ, gamepath)
-                winreg.SetValueEx(createstrings, "UseJoystick", 0, winreg.REG_SZ, "NO")
-                winreg.SetValueEx(createstrings, "Wide View Angle", 0, winreg.REG_SZ, "YES")
+            # Run game
+            logging.info("Run ISLE.EXE, located at {0}".format(gamepath))
+            subprocess.call([os.path.join(gamepath, "ISLE.EXE")])
 
+            # Display message
+            logging.info("Display exit message")
+            print("\nSee ya later, Brickulator!")
 
-            logging.info("Create App Path registry string")
-            with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths') as createapppath:
-                winreg.SetValue(createapppath, "LEGOISLE.exe", winreg.REG_SZ, gamepath)
+            # Close app
+            logging.info("{0} is shutting down".format(app))
+            raise SystemExit
 
-            logging.info("Displaying names of Registry strings")
-            logging.info("(This creates the illusion that the strings are being created as the name is printed)")
-
-            for line in stringnames:
-                # Print list of string names one at a time
-                print(line, end="\n")
-                sleep(0.5)
-
-            logging.info("Sandbox sucessfully created")
-            print("\n{0} Sandbox sucessfully created!".format(game))
-
-            # Launch LEGO Island?
-            logging.info("Do you want to play LEGO Island now?")
-            print("\nDo you want to play {0} now? ".format(game) + r"(y\N)")
-            rungame = input("\n> ".format(game))
-
-            # No, don't launch it
-            if rungame.lower() != "y":
-                logging.warning("User does not want to play LEGO Island right now!")
-                main()
-
-            # Yes, launch it
-            else:
-                sleep(1)
-                try:
-                    logging.info("Display exit message")
-                    print("See ya later, Brickulator!")
-
-
-                    # Load game, exit app
-                    logging.info("Run LEGOISLE.EXE, located at {0}".format(gamepath))
-                    subprocess.call([gamepath + "/LEGOISLE.EXE"])
-                    logging.info("ICU Sandbox is shutting down.")
-                    raise SystemExit
-
-                # Cannot find EXE at gamepath entered
-                except WindowsError:
-                    logging.warning('Cannot find {0} installation at "{1}"!'.format(game, gamepath))
-                    print('Cannot find {0} installation at "{1}"!'.format(game, gamepath))
-                    logging.info("Switching to main menu")
-                    main()
-
-        except PermissionError:
-            logging.warning("Cannot create Sandbox!")
-            logging.warning("ICU Sandbox was not run with Administrator rights, which are needed to create the Sandbox!")
-            print("\n{0} does not have the user rights to operate!\nPlease relaunch {1} as an Administrator.".format(app, app))
+        # Cannot find EXE at gamepath entered
+        except OSError:
+            logging.warning('Cannot find {0} installation at "{1}"!'.format(game, gamepath))
+            print('\nCannot find {0} installation at\n"{1}"!'.format(game, gamepath))
             sleep(3)
             logging.info("Switching to main menu")
             main()
-# ------------ End Sandbox Creation Code ------------ #
+
+# ------------ End Game Launching Code ------------ #
 
 
-# ------------ Begin Sandbox Deletion Code ------------ #
 
-def deletesandbox():
-    '''Deletes LEGO Island Sandbox'''
+# ------------ Begin Sandbox Deletion Intro ------------ #
+
+def deleteSandbox():
+    '''Sandbox Deletion Launcher'''
+
+    logging.info('''
+''')
+
+
+    # Again, if user is running 32-bit Windows
+    if osbit == "x86":
+        logging.info("User is running 32-bit (x86) Windows, delete x86 Registry Strings")
+        logging.info("Switch to del32bitSandbox()")
+        del32bitSandbox()
+
+    # If user is running 32-bit Windows...
+    elif osbit == "x64":
+        logging.info("User is running 64-bit (x64) Windows, delete x64 Registry Strings")
+        logging.info("Switch to del64bitSandbox()")
+        del64bitSandbox()
+
+# ------------ End Sandbox Deletion Intro ------------ #
+
+
+# ------------ Begin 32-bit Sandbox Deletion Code ------------ #
+
+def del32bitSandbox():
+    '''Deletes x86 LEGO Island Sandbox'''
+
+    logging.info('''
+''')
+
 
     try:
-        logging.info("Delete game registry strings")
+        logging.info("Deleting required game registry strings (x86)")
         print("\nDeleting Sandbox...\n")
 
         # Open root key
+        logging.info("Delete all game strings, inlcuding root string")
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Mindscape', 0, winreg.KEY_ALL_ACCESS) as deletestrings:
 
-            # All game registry value
+            # All game registry values
             winreg.DeleteKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Mindscape\LEGO Island')
-            # Delete all created keys and values
+            # Delete root key
             winreg.DeleteKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Mindscape')
 
             # Delete App Path
-            logging.info("Delete App Path registry string")
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths', 0, winreg.KEY_ALL_ACCESS) as deletestrings:
-               winreg.DeleteKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths\LEGOISLE.exe')
+        logging.info("Delete App Path registry string")
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths', 0, winreg.KEY_ALL_ACCESS) as deletestrings:
+            winreg.DeleteKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths\LEGOISLE.exe')
+
+        # Display names of registry strings
+        logging.info("Displaying names of Registry strings")
+        logging.info("(This creates the illusion that the string is being deleted as the name is printed)")
 
         for line in stringnames:
             print(line, end="\n") # Again, display string names one at a time
             sleep(0.2)
 
         # The sandbox was sucessfully deleted
-        logging.info("LEGO Isand Sandbox sucessfully deleted!")
-        print("\n{0} Sandbox sucessfully deleted!".format(game))
+        logging.info("Sandbox sucessfully deleted!")
+        print("\nSandbox sucessfully deleted!")
         logging.info("Switching to main menu")
         main()
 
@@ -272,47 +434,119 @@ def deletesandbox():
         logging.info("Switching to main menu")
         main()
 
-# ------------ End Sandbox Deletion Code ------------ #
+# ------------ End 32-bit Sandbox Deletion Code ------------ #
+
+
+# ------------ Begin 64-bit Sandbox Deletion Code ------------ #
+
+def del64bitSandbox():
+    '''Deletes x64 LEGO Island Sandbox'''
+
+    logging.info('''
+''')
+
+
+    try:
+        logging.info("Deleting required game registry strings (x64)")
+        print("\nDeleting Sandbox...\n")
+
+        # Open root key
+        logging.info("Delete all game strings, inlcuding root string")
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Wow6432Node\Mindscape', 0, winreg.KEY_ALL_ACCESS) as deletestrings:
+
+            # All game registry values
+            winreg.DeleteKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Wow6432Node\Mindscape\LEGO Island')
+            # Delete root key
+            winreg.DeleteKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Wow6432Node\Mindscape')
+
+            # Delete App Path
+        logging.info("Delete App Path registry string")
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths', 0, winreg.KEY_ALL_ACCESS) as deletestrings:
+            winreg.DeleteKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Microsoft\Windows\CurrentVersion\App Paths\LEGOISLE.exe')
+
+        # Display names of registry strings
+        logging.info("Displaying names of Registry strings")
+        logging.info("(This creates the illusion that the string is being deleted as the name is printed)")
+
+        for line in stringnames:
+            print(line, end="\n") # Again, display string names one at a time
+            sleep(0.2)
+
+        # The sandbox was sucessfully deleted
+        logging.info("Sandbox sucessfully deleted!")
+        print("\nSandbox sucessfully deleted!")
+        logging.info("Switching to main menu")
+        main()
+
+    # The sandbox has already been deleted
+    except WindowsError:
+        logging.warning("Cannot find a Sandbox to delete!")
+        print("\nCannot find a Sandbox to delete!")
+        sleep(2)
+        logging.info("Switching to main menu")
+        main()
+
+# ------------ End 64-bit Sandbox Deletion Code ------------ #
 
 
 # ------------ Begin ICU Sandbox Shutdown Routine ------------ #
 
-def closeapp():
-    '''Custom Exit Routine'''
+def close():
+    '''Custom Exit Routine with Sandbox Detection'''
+
+    logging.info('''
+''')
+
+
     try:
-        # The sandbox still exists
-        logging.warning("The Sandbox still exists!")
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Mindscape\LEGO Island', 0, winreg.KEY_ALL_ACCESS) as findsandbox:
-            logging.info("Do you want to exit without deleting your Sandbox?")
-            print("\nDo you want to close {0} before deleting your sandbox?\nNot doing so can pose a security hazard! ".format(app) + r"(y\N)")
-            closeapp = input("\n> ")
+        if osbit == "x86":
+            # The x86 sandbox still exists
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Mindscape\LEGO Island', 0, winreg.KEY_READ):
+                logging.warning("The (X86) Sandbox still exists!")
 
-            # Yes, I want the sandbox to remain
-            if closeapp.lower() == "y":
-                logging.warning("User chose to exit without deleting the Sandbox!")
-                print("\nThanks for the visit. You're welcome anytime! We'll miss you!")
-                sleep(3)
-                logging.info("ICU Sandbox is shutting down")
-                raise SystemExit
-
-            # No, I will delete the sandbox
-            else:
-                logging.info("User chose to delete the Sandbox before exiting")
-                logging.info("Switching to Sandbox Deletion process (deleteSandbox())")
-                deleteSandbox()
+        elif osbit == "x64":
+            # The x64 sandbox still exists
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'Software\Wow6432Node\Mindscape\LEGO Island', 0, winreg.KEY_READ):
+                logging.warning("The (X64) Sandbox still exists!")
 
     # The sandbox has already been deleted
-    except WindowsError:
+    except EnvironmentError:
         logging.info("Sandbox has already been deleted")
         print("\nIf you select the green brick, you go! If you select the red brick, you stay! \nGreen go, red stay.")
         sleep(4)
         logging.info("ICU Sandbox is shutting down")
         raise SystemExit
 
+    # Do you want to close without deleting the Sandbox?
+    logging.info("Do you want to exit without deleting your Sandbox?")
+    print("\nDo you want to close {0} without deleting your sandbox?\nNot doing so can pose a security hazard!".format(app) + r" (y\N)")
+    closeapp = input("\n> ")
+
+    # Yes, I want the sandbox to remain
+    # User must press 'y' to exit, anything else deletes it.
+    if closeapp.lower() == "y":
+        logging.warning("User chose to exit without deleting the Sandbox!")
+        print("\nThanks for the visit. You're welcome anytime! We'll miss you!")
+        sleep(3)
+        logging.info("ICU Sandbox is shutting down")
+        raise SystemExit
+
+    # No, I will delete the sandbox
+    else:
+        logging.info("User chose to delete the Sandbox before exiting")
+
+        # Wow, I'm use this variable a lot...
+        if osbit == "x86":
+            logging.info("Switching to Sandbox Deletion process (del32bitSandbox())")
+            del32bitSandbox()
+
+        elif osbit == "x64":
+            logging.info("Switching to Sandbox Deletion process (del64bitSandbox())")
+            del64bitSandbox()
+
 # ------------ End ICU Sandbox Shutdown Routine ------------ #
 
-
-# List of registry string names. Are printed during the creation and deletion process.
+# List of registry string names. Are printed during the Sandbox creation and deletion process.
 stringnames = ["3D Device Name",
                "3DSound",
                "Back Buffers in Video RAM",
